@@ -1,0 +1,39 @@
+Yet Another JS CSS selector library.
+
+This library is capable of selecting any elements inside DOM. It supports all basic CSS selectors.
+As the result you get array of matched elements.
+
+Examples of usage:
+
+    <div class="w-s">
+        <div class="c1">
+            <div class="c2">
+                <span id="ind1"></span>
+                <span id="in-d2"></span>
+                <span id="in"></span>
+                <span class="in inside out"></span>
+                <p aaa="ccc" class="c3" id="pi1"></p>
+                <span id="ind3"></span>
+                <span id="i4"></span>
+            </div>
+            <div id="another"></div>
+        </div>
+    </div>
+
+ - select all "div" elements:
+    Run: yas("div");
+    Result: [div.w-s, div.c1, div.c2, div#another]
+
+ - select element with class "c3" which is inside "div" element:
+    Run: yas("div .c3");
+    Result: [p#pi1.c3]
+
+ - select all "span" elements inside "div" element with class "c2", where span class attribute contains letter "i":
+    Run: yas("div.c2 > span[id*='i']");
+    Result: [span#ind1, span#in-d2, span#in, span#ind3, span#i4]
+
+
+
+Authors:
+ - Mykola Kyryk (Mykola.Kyryk@gmail.com)
+ - Arthur Borisow (Arthur.Borisow@gmail.com)
