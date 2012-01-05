@@ -92,37 +92,28 @@
       return sibling(node, 'previous');
     };
 
-    var children = (function () {
-      if (win.document.childNodes) {
-        return function (node) {
-          var n = node.firstChild, r = [];
-          if (n === null) {
-            return [];
-          }
+    var children = function (node) {
+      var n = node.childNodes, r = [];
 
-          if (isNode(n)) {
-            r.push(n);
-          }
+      array.each(n, function (el) {
+        if (isNode(el)) {
+          r.push(el);
+        }
+      });
+      return r;
+    };
 
-          while ((n = next(n)) !== null) {
-            r.push(n);
-          }
+    var isEmpty = function (node) {
+      var n = node.childNodes, i;
 
-          return r;
-        };
-      } else {
-        return function (node) {
-          var n = node.childNodes, r = [];
-
-          array.each(n, function (el) {
-            if (isNode(el)) {
-              r.push(el);
-            }
-          });
-          return r;
-        };
+      for(i = 0; i < n.length; i += 1) {
+        if(isNode(n[i]) || n[i].nodeType === 3) {
+          return false;
+        }
       }
-    }());
+
+      return true;
+    };
 
     var getAttribute = function (node, attr) {
       attr = { 'for': 'htmlFor', 'class': 'className' }[attr] || attr;
@@ -133,6 +124,7 @@
       next : next,
       prev : prev,
       children : children,
+      isEmpty: isEmpty,
       attr : {
         get : getAttribute
       }
@@ -145,7 +137,7 @@
       selectorString = string.trim(selectorString);
       selectorString = string.removeDuplications(selectorString, ' ');
       selectorString = selectorString.replace(/ ?([~>+]) ?/g, '$1');
-      var regexp = /([a-zA-Z0-9_](?:[a-zA-Z0-9_\-]*[a-zA-Z0-9_])?)|\[|\]|\|=(?=['"])|=(?=['"])|!=(?=['"])|\-=(?=['"])|\*=(?=['"])|\^=(?=['"])|\$=(?=['"])|\+|~|>|\*| |\.|#/g;
+      var regexp = /([a-zA-Z0-9_](?:[a-zA-Z0-9_\-]*[a-zA-Z0-9_])?)|\[|\]|\|=(?=['"])|=(?=['"])|!=(?=['"])|\-=(?=['"])|\*=(?=['"])|\^=(?=['"])|\$=(?=['"])|\+|~|>|\*| |\.|:|#/g;
       var results = [ ' ' ];
       var res;
       while ((res = regexp.exec(selectorString)) !== null) {
@@ -193,6 +185,104 @@
       };
 
       return conditions[condition](attrValue, searchValue);
+    };
+
+    var filters = function(filterName, context) {
+      var f = {
+        'first' : function(context) {
+          return [context[0]];
+        },
+        'last' : function(context) {
+          return context.slice(-1);
+        },
+        'even' : function(context) {
+          var newContext = [], i;
+
+          for(i = 0; i < context.length; i += 2) {
+            newContext.push(context[i]);
+          }
+
+          return newContext;
+        },
+        'odd' : function(context) {
+          var newContext = [], i;
+
+          for (i = 1; i < context.length; i += 2) {
+            newContext.push(context[i]);
+          }
+
+          return newContext;
+        },
+        'first-child' : function (context) {
+          var newContext = [], parents = [];
+
+          array.each(context, function(el) {
+            var parent = el.parentNode;
+            if(!array.includes(parent, parents)) {
+              parents.push(parent);
+              newContext.push(el);
+            }
+          });
+
+          return newContext;
+        },
+        'last-child' : function (context) {
+          var newContext = [], parents = [];
+
+          array.each(context.reverse(), function(el) {
+            var parent = el.parentNode;
+            if (!array.includes(parent, parents)) {
+              parents.push(parent);
+              newContext.push(el);
+            }
+          });
+
+          return newContext.reverse();
+        },
+        'only-child' : function (context) {
+          var newContext = [], parents = [];
+
+          array.each(context, function(el) {
+            var parent = el.parentNode;
+            if (!array.includes(parent, parents)) {
+              parents.push(parent);
+            }
+          });
+
+          array.each(parents, function(parent) {
+            var children = dom.children(parent);
+            if (children.length === 1) {
+              newContext.push(children[0]);
+            }
+          });
+
+          return newContext;
+        },
+        'empty' : function (context) {
+          var newContext = [];
+
+          array.each(context, function(el) {
+            if(dom.isEmpty(el)) {
+              newContext.push(el);
+            }
+          });
+
+          return newContext;
+        },
+        'parent' : function (context) {
+          var newContext = [];
+
+          array.each(context, function(el) {
+            if(!dom.isEmpty(el)) {
+              newContext.push(el);
+            }
+          });
+
+          return newContext;
+        }
+      };
+
+      return f[filterName](context);
     };
 
     var currentPosition = 0;
@@ -329,6 +419,10 @@
           });
 
           return newContext;
+        },
+        ':' : function (context, selectors) {
+          currentPosition += 1;
+          return filters(selectors[currentPosition], context);
         }
       };
     }());
@@ -349,5 +443,4 @@
   }
 
   win.yas = selector;
-
 }(this));
